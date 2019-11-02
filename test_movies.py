@@ -1,6 +1,8 @@
 import pytest
 import requests
 import movies
+import sqlite3
+from movies import DB
 
 FAKE_URL = 'http://fake_url'
 
@@ -21,6 +23,12 @@ class MockResponse_NO_PARAMS:
         # return {"Response":"False","Error":"No API key provided."}
         # return {"Response":"False","Error":"Movie not found!"}
 
+class MockDB:
+    def __init__(self):
+        self.conn = sqlite3.connect('test.db')
+        self.cursor = self.conn.cursor()
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS movies (ID INTEGER PRIMARY KEY, TITLE TEXT, YEAR INTEGER,  RUNTIME TEXT, GENRE TEXT, DIRECTOR TEXT, CAST TEXT, WRITER TEXT, LANGUAGE TEXT, COUNTRY TEXT, AWARDS TEXT, IMDb_Rating FLOAT, IMDb_votes INTEGER, BOX_OFFICE INTEGER)")
+
 
 @pytest.fixture
 def mock_response(monkeypatch):
@@ -36,6 +44,11 @@ def auth():
     with open('apikey.json', 'r') as f:
         auth = json.load(f)
     return auth
+
+@pytest.fixture(scope="session")
+def mock_db():
+    return MockDB()
+
 
 def test_get_movie_no_apikey(mock_response):
     """Test that function returns an error if no API key is provided"""
@@ -74,8 +87,28 @@ def test_parse_json_to_movie(monkeypatch):
     alien = movies.json_to_movie(response)
     assert alien.title == 'Alien'
     assert alien.director == 'Ridley Scott'
-    assert alien.actors == 'Tom Skerritt, Sigourney Weaver, Veronica Cartwright, Harry Dean Stanton'
-    assert alien.oscars_won == '1'
-    assert alien.oscar_nominations == 'N/A'
-    assert alien.another_wins == '16'
-    assert alien.another_nominations == '19'
+    assert alien.cast == 'Tom Skerritt, Sigourney Weaver, Veronica Cartwright, Harry Dean Stanton'
+    assert alien.awards == 'Won 1 Oscar. Another 16 wins & 19 nominations.'
+
+def test_db_empty(mock_db):
+    db = DB.get_all_titles(mock_db)
+    assert len(db.fetchall()) == 0
+
+def test_insert_not_duplicated(mock_db):
+    title = {"Title":"Alien"}
+    DB.insert(mock_db, title)
+    DB.insert(mock_db, title)
+    db = DB.get_all_titles(mock_db)
+    items = db.fetchall()
+    assert len(items) == 1
+    assert 'Alien' in str(items)
+
+def test_update(monkeypatch, mock_db):
+    alien = MockResponse_OK().json()
+    DB.insert(mock_db, alien)
+    DB.update(mock_db, alien)
+    db = DB.get_by_title(mock_db, alien)
+    item = db.fetchone()
+    assert 'Alien' in str(item)
+    assert 'Won 1 Oscar. Another 16 wins & 19 nominations.' in str(item)
+    assert '8.4' in str(item)
