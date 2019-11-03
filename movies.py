@@ -3,6 +3,7 @@ import json
 import re
 import sqlite3 as db
 
+
 def get_apikey():
     with open('apikey.json', 'r') as f:
         apikey = json.load(f)
@@ -13,21 +14,24 @@ def get_movie(url, params):
     return res.json()
 
 def json_to_movie(data):
-    awards = parse_awards(data['Awards'])
-    return Movie(
-        title=data['Title'], 
-        year=data['Year'],
-        runtime=data['Runtime'],
-        genre=data['Genre'],
-        director=data['Director'],
-        cast=data['Actors'],
-        writer=data['Writer'],
-        language=data['Language'],
-        country=data['Country'],
-        awards=data['Awards'],
-        imdb_rating=data['imdbRating'],
-        imdb_votes=data['imdbVotes'],
-        box_office=data['BoxOffice']
+        d = ''
+        box_office = (d.join(filter(lambda x : x.isdigit(), data['BoxOffice'])))
+        box_office = int(box_office) if len(box_office) > 1 else 0
+        
+        return Movie(
+        Title=data['Title'], 
+        Year=data['Year'],
+        Runtime=data['Runtime'],
+        Genre=data['Genre'],
+        Director=data['Director'],
+        Cast=data['Actors'],
+        Writer=data['Writer'],
+        Language=data['Language'],
+        Country=data['Country'],
+        Awards=data['Awards'],
+        imdb_Rating=data['imdbRating'],
+        imdb_Votes=data['imdbVotes'],
+        Box_Office=box_office
         )
 
 def parse_awards(data):
@@ -46,50 +50,85 @@ def parse_awards(data):
     }
     return awards
 
+def dict_from_class(cls):
+    return dict((key, value) for (key, value) in cls.__dict__.items())
 
 class Movie:
     """ Movie custom class """
 
-    def __init__(self, title, year='N/A', runtime='N/A', genre = 'N/A', director='N/A', cast='N/A', writer='N/A', 
-    language='N/A', country='N/A', awards='N/A', imdb_rating='N/A', imdb_votes='N/A', box_office='N/A'):
-        self.title = title
-        self.year = year
-        self.runtime = runtime
-        self.genre = genre
-        self.director = director
-        self.cast = cast
-        self.writer = writer
-        self.language = language
-        self.country = country
-        self.awards = awards
-        self.IMDb_Rating = imdb_rating
-        self.IMDb_votes = imdb_votes
-        self.box_office = box_office
+    def __init__(self, Title, Year='N/A', Runtime='N/A', Genre = 'N/A', Director='N/A', Cast='N/A', Writer='N/A', 
+    Language='N/A', Country='N/A', Awards='N/A', imdb_Rating='N/A', imdb_Votes='N/A', Box_Office='N/A'):
+        self.Title = Title
+        self.Year = Year
+        self.Runtime = Runtime
+        self.Genre = Genre
+        self.Director = Director
+        self.Cast = Cast
+        self.Writer = Writer
+        self.Language = Language
+        self.Country = Country
+        self.Awards = Awards
+        self.imdb_Rating = imdb_Rating
+        self.imdb_Votes = imdb_Votes
+        self.Box_Office = Box_Office
 
     def __str__(self):
         return self.title
+
 
 class DB:
     """ Database class """  
     def __init__(self):
         self.conn = db.connect('movies.sqlite')
-        self.cursor = self.conn.cursor()
+        self.cursor = self.conn.cursor(prepared=True)
 
     def insert(self, movie):
-        return self.cursor.execute("insert into movies ('title') select :Title where not exists (select 1 from movies where title=:Title)",  movie)
+        params = dict_from_class(movie)
+        return self.cursor.execute("insert into movies ('title') select :Title where not exists (select 1 from movies where title=:Title)",  params)
 
     def update(self, movie):
-        return self.cursor.execute("""update movies set year=:Year, runtime=:Runtime, genre=:Genre, director=:Director, cast=:Actors, writer=:Writer, language=:Language, country=:Country, awards=:Awards, imdb_rating=:imdbRating, imdb_votes=:imdbVotes, box_office=:BoxOffice where title=:Title""", movie)
+        params = dict_from_class(movie)
+        return self.cursor.execute("update movies set Year=:Year, Runtime=:Runtime, Genre=:Genre, Director=:Director, Cast=:Cast, Writer=:Writer, Language=:Language, Country=:Country, Awards=:Awards, imdb_Rating=:imdb_Rating, imdb_Votes=:imdb_Votes, Box_Office=:Box_Office where title=:Title", params)
 
     def get_all_titles(self):
         return self.cursor.execute("select title from movies")
 
     def get_by_title(self, movie):
-        return self.cursor.execute("select * from movies where title=:Title", movie)
+        params = dict_from_class(movie)
+        return self.cursor.execute("select * from movies where title=:Title", params)
 
+    def get_sorted_by(self, *args):
+        column = ""
+        for arg in args:
+            column = arg+", " + column
+        query = ""f"select title, {column[:-2]} from movies order by {column[:-2]} desc"""
+        return self.cursor.execute(query)
 
-# ee = DB()
-# ee.insert()
-# ee.update()
-# heh = ee.get_all_titles()
-# print(heh.fetchall())
+    def get_filtered_by_director(self, director):
+        param = ('%'+director+'%',)
+        return self.cursor.execute("select title from movies where director like ?", param)
+
+    def get_filtered_by_actor(self, actor):
+        param = ('%'+actor+'%',)
+        return self.cursor.execute("select title from movies where movies.cast like ?", param)
+
+    def get_oscar_nominated(self):
+        return self.cursor.execute("select title from movies where awards like 'Nominated%'")
+
+    def get_won_more_than_80_percent(self):
+        def regexp(expr, item):
+            m = re.search(expr, item)
+            wins = float(m.group(1))
+            nominations = float(m.group(3))        
+            return wins/nominations > 0.8
+        
+        self.conn.create_function("REGEXP", 2, regexp)
+        expr = (r'(\d*)\s\b(\w*wins\w*)\b\s.\s(\d*)\s\b(\w*nomination*\w*)\b.*$',)
+        return self.cursor.execute("""select * from movies where awards regexp ?""", expr)
+
+    def get_boxoffice_over_hundred_million(self):
+        return self.cursor.execute("select title, box_office from movies where box_office > '100000000'")
+
+    def get_by_language(self, language):
+        param = ('%'+language+'%',)
+        return self.cursor.execute("select title, language from movies where language like ?", param)
