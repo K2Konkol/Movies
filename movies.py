@@ -32,15 +32,23 @@ def json_to_movie(data):
         Awards=data['Awards'],
         imdb_Rating=data['imdbRating'],
         imdb_Votes=data['imdbVotes'],
-        Box_Office=str_to_int(data['BoxOffice'])
+        Box_Office=data['BoxOffice']
         )
 
-def count_awards(data):
-    m1 = re.search(r'\b(\w*Won\w*)\b\s(\d*)\s\b(\w*Oscar*\w*)\b', data)
-    m2 = re.search(r'(\d*)\s\b(\w*wins\w*)\b\s.\s(\d*)\s\b(\w*nomination*\w*)\b', data)
-    oscars_won = int(m1.group(2)) if m1 else 0
-    another_wins = int(m2.group(1)) if m2 else 0
-    return oscars_won+another_wins
+def get_oscars(data):
+    m = re.search(r'\b(\w*Won\w*)\b\s(\d*)\s\b(\w*Oscar*\w*)\b', data)
+    oscars = int(m.group(2)) if m else 0
+    return oscars
+
+def get_awards(data):
+    m = re.search(r'(\d*)\s\b(\w*wins\w*)\b\s.\s(\d*)\s\b(\w*nomination*\w*)\b', data)
+    awards = int(m.group(1)) if m else 0
+    return awards
+
+def get_nominations(data):
+    m = re.search(r'(\d*)\s\b(\w*wins\w*)\b\s.\s(\d*)\s\b(\w*nomination*\w*)\b', data)
+    nominations = int(m.group(3)) if m else 0
+    return nominations
 
 def dict_from_class(cls):
     return dict((key, value) for (key, value) in cls.__dict__.items())
@@ -70,7 +78,8 @@ class Movie:
 
 class DB:
     """ Database class """  
-    def __init__(self):
+    
+    def __init__(self): 
         self.conn = db.connect('movies.sqlite')
         self.cursor = self.conn.cursor(prepared=True)
 
@@ -113,13 +122,19 @@ class DB:
             wins = float(m.group(1))
             nominations = float(m.group(3))        
             return wins/nominations > 0.8
-        
+
         self.conn.create_function("REGEXP", 2, regexp)
         expr = (r'(\d*)\s\b(\w*wins\w*)\b\s.\s(\d*)\s\b(\w*nomination*\w*)\b.*$',)
         return self.cursor.execute("""select * from movies where awards regexp ?""", expr)
 
     def get_boxoffice_over_hundred_million(self):
-        return self.cursor.execute("select title, box_office from movies where box_office > '100000000'")
+        def str_to_int(item):
+            s = ''
+            i = (s.join(filter(lambda x : x.isdigit(), item)))
+            return int(i) if len(i) > 0 else 0
+            
+        self.conn.create_function("STR_TO_INT", 1, str_to_int)  
+        return self.cursor.execute("select title, box_office from movies where cast(str_to_int(box_office) as int) > '100000000'")
 
     def get_by_language(self, language):
         param = ('%'+language+'%',)
@@ -141,14 +156,61 @@ class DB:
         params = (movie1, movie2,)
         return self.cursor.execute("select title, runtime from movies where title=? union select title, runtime from movies where title=?", params)
 
+    def get_for_highscores(self):
+        return self.cursor.execute("select title, runtime, box_office, awards, imdb_rating from movies")
 
 def compare_awards(movies):      
     movie1 = movies[0]
     movie2 = movies[1]
-    return movie1[0] if count_awards(movie1[1]) > count_awards(movie2[1]) else movie2[0]
+    return movie1[0] if get_awards(movie1[1]) > get_awards(movie2[1]) else movie2[0]
 
 def compare_runtime(movies):      
     movie1 = movies[0]
     movie2 = movies[1]
     return movie1[0] if str_to_int(movie1[1]) > str_to_int(movie2[1]) else movie2[0]
 
+def get_highest_runtime(movies):
+    highest_runtime = ('','')
+    for movie in movies:
+        if int(str_to_int(movie[1])) > int(str_to_int(highest_runtime[1])):
+            highest_runtime = (movie[0],movie[1])
+    return highest_runtime
+
+def get_highest_box_office(movies):
+    highest_box_office = ('','')
+    for movie in movies:
+        if int(str_to_int(movie[2])) > int(str_to_int(highest_box_office[1])):
+            highest_box_office = (movie[0],movie[2])
+    return highest_box_office
+
+def get_oscars_highscore(movies):
+    oscar_highscore = ('',0)
+    for movie in movies:
+        oscars = get_oscars(movie[3])
+        if oscars > int(oscar_highscore[1]):
+            oscar_highscore = (movie[0],oscars)
+    return oscar_highscore
+
+def get_nominations_highscore(movies):
+    nominations_highscore = ('',0)
+    for movie in movies:
+        nominations = get_nominations(movie[3])
+        if nominations > int(nominations_highscore[1]):
+            nominations_highscore = (movie[0],nominations)
+    return nominations_highscore
+
+def get_awards_highscore(movies):
+    awards_highscore = ('',0)
+    for movie in movies:
+        awards = get_awards(movie[3])
+        if awards > int(awards_highscore[1]):
+            awards_highscore = (movie[0],awards)
+    return awards_highscore
+
+def get_highest_imdb_rating(movies):
+    highest_rating = ('',0.0)
+    for movie in movies:
+        rating = movie[4]
+        if rating > int(highest_rating[1]):
+            highest_rating = (movie[0],rating)
+    return highest_rating

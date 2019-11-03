@@ -95,17 +95,21 @@ def test_get_apikey(auth):
     """Test that function returns apikey"""
     assert movies.get_apikey() == auth 
 
-def test_count_awards_no_oscar():
+def test_get_awards_no_oscar():
     data = "3 wins & 1 nomination."
-    assert movies.count_awards(data) == 3
+    assert movies.get_awards(data) == 3
 
-def test_count_awards_oscar_nominated():
+def test_get_awards_oscar_nominated():
     data = "Nominated for 7 Oscars. Another 19 wins & 32 nominations."
-    assert movies.count_awards(data) == 19
+    assert movies.get_awards(data) == 19
 
-def test_count_awards_oscar_won():
+def test_get_nominations():
+    data = "Nominated for 7 Oscars. Another 19 wins & 32 nominations."
+    assert movies.get_nominations(data) == 32
+
+def test_get_oscars_won():
     data = "Won 1 Oscar. Another 16 wins & 19 nominations."
-    assert movies.count_awards(data) == 17
+    assert movies.get_oscars(data) == 1
 
 def test_parse_json_to_movie(monkeypatch):
     response = MockResponse_OK().json()
@@ -233,3 +237,62 @@ def test_compare_runtime(mock_db_populated):
     result = db.fetchall()
     winner = movies.compare_runtime(result)
     assert winner == 'Boyhood'
+
+def test_get_for_highscores(mock_db_populated):
+    db = DB.get_for_highscores(mock_db_populated)
+    result = db.fetchall()
+    assert len(result) == 5
+    assert 'Alien' in str(result)
+    assert '165 min' in str(result)
+    assert '$23,844,220' in str(result)
+    assert 'Won 6 Oscars. Another 40 wins & 67 nominations.' in str(result)
+    assert '9.3' in str(result)
+
+def test_get_highest_runtime(mock_db_populated):
+    db = DB.get_for_highscores(mock_db_populated)
+    result = db.fetchall()
+    winner = movies.get_highest_runtime(result)
+    assert 'Boyhood' in str(winner)
+    assert '165 min' in str(winner)
+
+def test_get_highest_box_office(mock_db_populated):
+    db = DB.get_for_highscores(mock_db_populated)
+    result = db.fetchall()
+    winner = movies.get_highest_box_office(result)
+    assert 'Forrest Gump' in str(winner)
+    assert '$330,000,000' in str(winner)
+
+def test_get_most_oscars(mock_db_populated):
+    db = DB.get_for_highscores(mock_db_populated)
+    result = db.fetchall()
+    winner = movies.get_oscars_highscore(result)
+    assert 'Forrest Gump' in str(winner)
+    assert '6' in str(winner)
+
+def test_get_most_nominations(mock_db_populated):
+    db = DB.get_for_highscores(mock_db_populated)
+    result = db.fetchall()
+    winner = movies.get_nominations_highscore(result)
+    assert 'Boyhood' in str(winner)
+    assert '209' in str(winner)
+
+def test_get_most_awards(mock_db_populated):
+    db = DB.get_for_highscores(mock_db_populated)
+    result = db.fetchall()
+    winner = movies.get_awards_highscore(result)
+    assert 'Boyhood' in str(winner)
+    assert '171' in str(winner)
+    
+def test_get_most_awards(mock_db_populated):
+    db = DB.get_for_highscores(mock_db_populated)
+    result = db.fetchall()
+    winner = movies.get_awards_highscore(result)
+    assert 'Boyhood' in str(winner)
+    assert '171' in str(winner)
+
+def test_get_highest_imdb_rating(mock_db_populated):
+    db = DB.get_for_highscores(mock_db_populated)
+    result = db.fetchall()
+    winner = movies.get_highest_imdb_rating(result)
+    assert 'The Shawshank Redemption' in str(winner)
+    assert '9.3' in str(winner)
