@@ -13,12 +13,13 @@ def get_movie(url, params):
     res = requests.get(url, params)
     return res.json()
 
-def json_to_movie(data):
-        d = ''
-        box_office = (d.join(filter(lambda x : x.isdigit(), data['BoxOffice'])))
-        box_office = int(box_office) if len(box_office) > 1 else 0
-        
-        return Movie(
+def str_to_int(string):
+    s = ''
+    i = (s.join(filter(lambda x : x.isdigit(), string)))
+    return int(i) if len(i) > 0 else 0
+
+def json_to_movie(data):    
+    return Movie(
         Title=data['Title'], 
         Year=data['Year'],
         Runtime=data['Runtime'],
@@ -31,24 +32,15 @@ def json_to_movie(data):
         Awards=data['Awards'],
         imdb_Rating=data['imdbRating'],
         imdb_Votes=data['imdbVotes'],
-        Box_Office=box_office
+        Box_Office=str_to_int(data['BoxOffice'])
         )
 
-def parse_awards(data):
+def count_awards(data):
     m1 = re.search(r'\b(\w*Won\w*)\b\s(\d*)\s\b(\w*Oscar*\w*)\b', data)
-    m2 = re.search(r'\b(\w*Nominated for\w*)\b\s(\d*)\s\b(\w*Oscar*\w*)\b', data)
-    m3 = re.search(r'(\d*)\s\b(\w*wins\w*)\b\s.\s(\d*)\s\b(\w*nomination*\w*)\b', data)
-    oscars_won = m1.group(2) if m1 else 'N/A'
-    oscar_nominations = m2.group(2) if m2 else 'N/A'
-    another_wins = m3.group(1) if m3 else 'N/A'
-    another_nominations = m3.group(3) if m3 else 'N/A'
-    awards = {
-        "oscars_won":oscars_won,
-        "oscar_nominations":oscar_nominations,
-        "another_wins":another_wins,
-        "another_nominations":another_nominations
-    }
-    return awards
+    m2 = re.search(r'(\d*)\s\b(\w*wins\w*)\b\s.\s(\d*)\s\b(\w*nomination*\w*)\b', data)
+    oscars_won = int(m1.group(2)) if m1 else 0
+    another_wins = int(m2.group(1)) if m2 else 0
+    return oscars_won+another_wins
 
 def dict_from_class(cls):
     return dict((key, value) for (key, value) in cls.__dict__.items())
@@ -132,3 +124,31 @@ class DB:
     def get_by_language(self, language):
         param = ('%'+language+'%',)
         return self.cursor.execute("select title, language from movies where language like ?", param)
+
+    def compare_imdb_rating(self, movie1, movie2):
+        params = (movie1, movie2,)
+        return self.cursor.execute("select title from (select title, max(imdb_rating) from (select title, imdb_rating from movies where title=? union select title, imdb_rating from movies where title=?))", params)
+
+    def compare_box_office(self, movie1, movie2):
+        params = (movie1, movie2,)
+        return self.cursor.execute("select title from (select title, max(box_office) from (select title, box_office from movies where title=? union select title, box_office from movies where title=?))", params)
+
+    def get_awards(self, movie1, movie2):
+        params = (movie1, movie2,)
+        return self.cursor.execute("select title, awards from movies where title=? union select title, awards from movies where title=?", params)
+
+    def get_runtime(self, movie1, movie2):
+        params = (movie1, movie2,)
+        return self.cursor.execute("select title, runtime from movies where title=? union select title, runtime from movies where title=?", params)
+
+
+def compare_awards(movies):      
+    movie1 = movies[0]
+    movie2 = movies[1]
+    return movie1[0] if count_awards(movie1[1]) > count_awards(movie2[1]) else movie2[0]
+
+def compare_runtime(movies):      
+    movie1 = movies[0]
+    movie2 = movies[1]
+    return movie1[0] if str_to_int(movie1[1]) > str_to_int(movie2[1]) else movie2[0]
+

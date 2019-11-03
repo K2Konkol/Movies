@@ -95,17 +95,17 @@ def test_get_apikey(auth):
     """Test that function returns apikey"""
     assert movies.get_apikey() == auth 
 
-def test_parse_awards_no_oscar():
+def test_count_awards_no_oscar():
     data = "3 wins & 1 nomination."
-    assert movies.parse_awards(data) == {"oscars_won":'N/A', "oscar_nominations":'N/A', "another_wins":"3", "another_nominations":"1"}
+    assert movies.count_awards(data) == 3
 
-def test_parse_awards_oscar_nominated():
+def test_count_awards_oscar_nominated():
     data = "Nominated for 7 Oscars. Another 19 wins & 32 nominations."
-    assert movies.parse_awards(data) == {"oscars_won":'N/A', "oscar_nominations":'7', "another_wins":'19', "another_nominations":'32'}
+    assert movies.count_awards(data) == 19
 
-def test_parse_awards_oscar_won():
+def test_count_awards_oscar_won():
     data = "Won 1 Oscar. Another 16 wins & 19 nominations."
-    assert movies.parse_awards(data) == {"oscars_won":'1', "oscar_nominations":'N/A', "another_wins":'16', "another_nominations":'19'}
+    assert movies.count_awards(data) == 17
 
 def test_parse_json_to_movie(monkeypatch):
     response = MockResponse_OK().json()
@@ -124,51 +124,51 @@ def test_insert_not_duplicated(mock_db):
     DB.insert(mock_db, title)
     DB.insert(mock_db, title)
     db = DB.get_all_titles(mock_db)
-    items = db.fetchall()
-    assert len(items) == 1
-    assert 'Alien' in str(items)
+    result = db.fetchall()
+    assert len(result) == 1
+    assert 'Alien' in str(result)
 
-def test_update(monkeypatch, mock_db):
+def test_update(mock_db):
     alien = movies.Movie(Title='Alien', Awards='Won 1 Oscar. Another 16 wins & 19 nominations.')
     DB.insert(mock_db, alien)
     DB.update(mock_db, alien)
     db = DB.get_by_title(mock_db, alien)
-    item = db.fetchone()
-    assert 'Alien' in str(item)
-    assert 'Won 1 Oscar. Another 16 wins & 19 nominations.' in str(item)
+    result = db.fetchone()
+    assert 'Alien' in str(result)
+    assert 'Won 1 Oscar. Another 16 wins & 19 nominations.' in str(result)
 
 
-def test_sort_by(monkeypatch, mock_db_populated):
+def test_sort_by(mock_db_populated):
     db = DB.get_sorted_by(mock_db_populated, 'year')
-    items = db.fetchall()
-    assert len(items) == 5
-    assert '2014' in str(items[0])
-    assert '2000' in str(items[1])
-    assert '1994' in str(items[2])
-    assert '1994' in str(items[3])
-    assert '1979' in str(items[4])
+    result = db.fetchall()
+    assert len(result) == 5
+    assert '2014' in str(result[0])
+    assert '2000' in str(result[1])
+    assert '1994' in str(result[2])
+    assert '1994' in str(result[3])
+    assert '1979' in str(result[4])
 
-def test_filter_by_director(monkeypatch, mock_db_populated):
+def test_filter_by_director(mock_db_populated):
     db = DB.get_filtered_by_director(mock_db_populated, 'Ridley Scott')
-    items = db.fetchall()
-    assert len(items) == 1
-    assert 'Alien' in str(items)
+    result = db.fetchall()
+    assert len(result) == 1
+    assert 'Alien' in str(result)
 
-def test_filter_by_actor(monkeypatch, mock_db_populated):
+def test_filter_by_actor(mock_db_populated):
     db = DB.get_filtered_by_actor(mock_db_populated, 'Sigourney Weaver')
-    items = db.fetchall()
-    assert len(items) == 1
-    assert 'Alien' in str(items)
+    result = db.fetchall()
+    assert len(result) == 1
+    assert 'Alien' in str(result)
 
-def test_filter_oscar_nominated(monkeypatch, mock_db_populated):    
+def test_filter_oscar_nominated(mock_db_populated):    
     db = DB.get_oscar_nominated(mock_db_populated)
-    items = db.fetchall()
-    assert len(items) == 2
-    assert 'Alien' not in str(items)
-    assert 'Memento' in str(items)
-    assert 'The Shawshank Redemption' in str(items)
+    result = db.fetchall()
+    assert len(result) == 2
+    assert 'Alien' not in str(result)
+    assert 'Memento' in str(result)
+    assert 'The Shawshank Redemption' in str(result)
 
-def test_filter_won_more_than_80_percent(monkeypatch, mock_db_populated):    
+def test_filter_won_more_than_80_percent(mock_db_populated):    
     db = DB.get_all_titles(mock_db_populated)
     all_movies = db.fetchall()
     db = DB.get_won_more_than_80_percent(mock_db_populated)
@@ -182,16 +182,54 @@ def test_filter_won_more_than_80_percent(monkeypatch, mock_db_populated):
     assert 'The Shawshank Redemption' in str(all_movies)
     assert 'The Shawshank Redemption' not in str(filtered)
     
-def test_filter_boxoffice_over_hundred_million(monkeypatch, mock_db_populated):
+def test_filter_boxoffice_over_hundred_million(mock_db_populated):
     db = DB.get_boxoffice_over_hundred_million(mock_db_populated)
     filtered = db.fetchall()
     assert len(filtered) == 1
     assert 'Alien' not in str(filtered)
     assert 'Forrest Gump' in str(filtered)
 
-def test_filter_by_language(monkeypatch, mock_db_populated):
+def test_filter_by_language(mock_db_populated):
     db = DB.get_by_language(mock_db_populated, 'Spanish')
     filtered = db.fetchall()
     assert len(filtered) == 1
     assert 'Alien' not in str(filtered)
     assert 'Boyhood' in str(filtered)
+
+def test_compare_imdb_rating(mock_db_populated):
+    db = DB.compare_imdb_rating(mock_db_populated, 'Alien', 'Forrest Gump')
+    result = db.fetchone()
+    assert len(result) == 1
+    assert 'Forrest Gump' in str(result)
+
+def test_compare_box_office(mock_db_populated):
+    db = DB.compare_box_office(mock_db_populated, 'Boyhood', 'Forrest Gump')
+    result = db.fetchone()
+    assert len(result) == 1
+    assert 'Forrest Gump' in str(result)
+
+def test_get_awards(mock_db_populated):
+    db = DB.get_awards(mock_db_populated, 'Boyhood', 'Forrest Gump')
+    result = db.fetchall()
+    assert len(result) == 2
+    assert 'Forrest Gump' in str(result)
+    assert 'Boyhood' in str(result)
+
+def test_compare_awards_won(mock_db_populated):
+    db = DB.get_awards(mock_db_populated, 'Boyhood', 'Forrest Gump')
+    result = db.fetchall()
+    winner = movies.compare_awards(result)
+    assert winner == 'Boyhood'
+
+def test_get_runtime(mock_db_populated):
+    db = DB.get_runtime(mock_db_populated, 'Boyhood', 'Forrest Gump')
+    result = db.fetchall()
+    assert len(result) == 2
+    assert 'Forrest Gump' in str(result)
+    assert 'Boyhood' in str(result)
+        
+def test_compare_runtime(mock_db_populated):
+    db = DB.get_runtime(mock_db_populated, 'Boyhood', 'Forrest Gump')
+    result = db.fetchall()
+    winner = movies.compare_runtime(result)
+    assert winner == 'Boyhood'
