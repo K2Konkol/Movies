@@ -20,8 +20,7 @@ class MockResponse_NO_PARAMS:
     @staticmethod
     def json():
         return {"Response":"False","Error":"Something went wrong."}
-        # return {"Response":"False","Error":"No API key provided."}
-        # return {"Response":"False","Error":"Movie not found!"}
+    
 
 class MockDB:
     def __init__(self):
@@ -40,21 +39,20 @@ class MockDBPopulated:
         forrest = movies.json_to_movie(MockResponse_OK().json('forrest.json'))
         memento = movies.json_to_movie(MockResponse_OK().json('memento.json'))
         shawshank = movies.json_to_movie(MockResponse_OK().json('shawshank.json'))    
-        DB.insert(self, alien)
+        DB.insert(self, "Alien")
         DB.update(self, alien)
-        DB.insert(self, boyhood)
+        DB.insert(self, "Boyhood")
         DB.update(self, boyhood)
-        DB.insert(self, forrest)
+        DB.insert(self, "Forrest Gump")
         DB.update(self, forrest)
-        DB.insert(self, memento)
+        DB.insert(self, "Memento")
         DB.update(self, memento)
-        DB.insert(self, shawshank)
+        DB.insert(self, "The Shawshank Redemption")
         DB.update(self, shawshank)
 
 
 @pytest.fixture
 def mock_response(monkeypatch):
-
     def mock_get(*args, **kwargs):
         return MockResponse_OK() if {"t":"Alien","apikey":auth} in args else MockResponse_NO_PARAMS()
 
@@ -114,17 +112,17 @@ def test_get_oscars_won():
 def test_parse_json_to_movie(monkeypatch):
     response = MockResponse_OK().json()
     alien = movies.json_to_movie(response)
-    assert alien.Title == 'Alien'
-    assert alien.Director == 'Ridley Scott'
-    assert alien.Cast == 'Tom Skerritt, Sigourney Weaver, Veronica Cartwright, Harry Dean Stanton'
-    assert alien.Awards == 'Won 1 Oscar. Another 16 wins & 19 nominations.'
+    assert alien.title == 'Alien'
+    assert alien.director == 'Ridley Scott'
+    assert alien.cast == 'Tom Skerritt, Sigourney Weaver, Veronica Cartwright, Harry Dean Stanton'
+    assert alien.awards == 'Won 1 Oscar. Another 16 wins & 19 nominations.'
 
 def test_db_empty(mock_db):
     db = DB.get_all_titles(mock_db)
     assert len(db.fetchall()) == 0
 
 def test_insert_not_duplicated(mock_db):
-    title = movies.Movie(Title='Alien')
+    title = "Alien"
     DB.insert(mock_db, title)
     DB.insert(mock_db, title)
     db = DB.get_all_titles(mock_db)
@@ -133,8 +131,8 @@ def test_insert_not_duplicated(mock_db):
     assert 'Alien' in str(result)
 
 def test_update(mock_db):
-    alien = movies.Movie(Title='Alien', Awards='Won 1 Oscar. Another 16 wins & 19 nominations.')
-    DB.insert(mock_db, alien)
+    alien = movies.Movie(title='Alien', awards='Won 1 Oscar. Another 16 wins & 19 nominations.')
+    DB.insert(mock_db, "Alien")
     DB.update(mock_db, alien)
     db = DB.get_by_title(mock_db, alien)
     result = db.fetchone()
@@ -171,20 +169,6 @@ def test_filter_oscar_nominated(mock_db_populated):
     assert 'Alien' not in str(result)
     assert 'Memento' in str(result)
     assert 'The Shawshank Redemption' in str(result)
-
-def test_filter_won_more_than_80_percent(mock_db_populated):    
-    db = DB.get_all_titles(mock_db_populated)
-    all_movies = db.fetchall()
-    db = DB.get_won_more_than_80_percent(mock_db_populated)
-    filtered = db.fetchall()
-    assert len(all_movies) == 5
-    assert len(filtered) == 3
-    assert 'Alien' in str(all_movies)
-    assert 'Alien' in str(filtered)
-    assert 'Forrest Gump' in str(all_movies)
-    assert 'Forrest Gump' not in str(filtered)
-    assert 'The Shawshank Redemption' in str(all_movies)
-    assert 'The Shawshank Redemption' not in str(filtered)
     
 def test_filter_boxoffice_over_hundred_million(mock_db_populated):
     db = DB.get_boxoffice_over_hundred_million(mock_db_populated)
@@ -202,12 +186,6 @@ def test_filter_by_language(mock_db_populated):
 
 def test_compare_imdb_rating(mock_db_populated):
     db = DB.compare_imdb_rating(mock_db_populated, 'Alien', 'Forrest Gump')
-    result = db.fetchone()
-    assert len(result) == 1
-    assert 'Forrest Gump' in str(result)
-
-def test_compare_box_office(mock_db_populated):
-    db = DB.compare_box_office(mock_db_populated, 'Boyhood', 'Forrest Gump')
     result = db.fetchone()
     assert len(result) == 1
     assert 'Forrest Gump' in str(result)
