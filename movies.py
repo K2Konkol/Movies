@@ -443,9 +443,9 @@ class Main():
             
             filter = args.filter_by[0]
             if args.filter_by[0] not in ['nominated', 'awarded', 'earned']:
-                pass
+                value = args.filter_by[1]
             else:
-                value = args.filter_by[1] 
+                value = ''
             
             if filter == 'director':
                 columns = ('Title', filter)
