@@ -71,68 +71,63 @@ def dict_from_class(cls):
     """ Returns dictionary from Movie class"""
     return dict((key, value) for (key, value) in cls.__dict__.items())
 
-def get_highest_runtime(movies):
-    """ Helper function getting highest runtime """
-    highest_runtime = ('', '')
-    for movie in movies:
-        if movie[1] is not None and int(str_to_int(movie[1])) > int(str_to_int(highest_runtime[1])):
-            highest_runtime = (movie[0], movie[1])
-    return highest_runtime
+class Highscore():
+    def __init__(self):
+        self.highest_runtime = ('', '')
+        self.highest_box_office = ('', '')
+        self.oscar_highscore = ('', 0)
+        self.nominations_highscore = ('', 0)
+        self.awards_highscore = ('', 0)
+        self.highest_rating = ('', 0.0)
 
-def get_highest_box_office(movies):
-    """ Helper function getting highest box office """
-    highest_box_office = ('', '')
-    for movie in movies:
-        if movie[2] is not None and int(str_to_int(movie[2])) > int(str_to_int(highest_box_office[1])):
-            highest_box_office = (movie[0], movie[2])
-    return highest_box_office
+    def get_highest_runtime(self, movies):
+        highest_runtime = self.highest_runtime
+        for movie in movies:
+            if movie[1] is not None and int(str_to_int(movie[1])) > int(str_to_int(highest_runtime[1])):
+                highest_runtime = (movie[0], movie[1])
+        return highest_runtime
 
-def get_oscars_highscore(movies):
-    """ Helper function getting highest oscar wins """
-    oscar_highscore = ('', 0)
-    for movie in movies:
-        oscars = get_oscars(movie[3]) if movie[3] is not None else 0
-        if oscars > int(oscar_highscore[1]):
-            oscar_highscore = (movie[0], oscars)
-    return oscar_highscore
+    def get_highest_box_office(self, movies):
+        highest_box_office = self.highest_box_office
+        for movie in movies:
+            if movie[2] is not None and int(str_to_int(movie[2])) > int(str_to_int(highest_box_office[1])):
+                highest_box_office = (movie[0], movie[2])
+        return highest_box_office
 
-def get_nominations_highscore(movies):
-    """ Helper function getting nominations highscore """
-    nominations_highscore = ('', 0)
-    for movie in movies:
-        nominations = get_nominations(movie[3]) if movie[3] is not None else 0
-        if nominations > int(nominations_highscore[1]):
-            nominations_highscore = (movie[0], nominations)
-    return nominations_highscore
+    def get_highest_imdb_rating(self, movies):
+        highest_rating = self.highest_rating
+        for movie in movies:
+            rating = movie[4] if movie[4] is not None else 0
+            if rating > int(highest_rating[1]):
+                highest_rating = (movie[0], rating)
+        return highest_rating
 
-def get_awards_highscore(movies):
-    """ Helper function getting awards highscore """
-    awards_highscore = ('', 0)
-    for movie in movies:
-        awards = get_awards(movie[3]) if movie[3] is not None else 0
-        if awards > int(awards_highscore[1]):
-            awards_highscore = (movie[0], awards)
-    return awards_highscore
+    def get_oscars_highscore(self, movies):
+        """ Helper function getting highest oscar wins """
+        oscar_highscore = self.oscar_highscore
+        for movie in movies:
+            oscars = get_oscars(movie[3]) if movie[3] is not None else 0
+            if oscars > int(oscar_highscore[1]):
+                oscar_highscore = (movie[0], oscars)
+        return oscar_highscore
 
-def get_highest_imdb_rating(movies):
-    """ Helper function getting highest rating """
-    highest_rating = ('', 0.0)
-    for movie in movies:
-        rating = movie[4] if movie[4] is not None else 0
-        if rating > int(highest_rating[1]):
-            highest_rating = (movie[0], rating)
-    return highest_rating
+    def get_nominations_highscore(self, movies):
+        """ Helper function getting nominations highscore """
+        nominations_highscore = self.nominations_highscore
+        for movie in movies:
+            nominations = get_nominations(movie[3]) if movie[3] is not None else 0
+            if nominations > int(nominations_highscore[1]):
+                nominations_highscore = (movie[0], nominations)
+        return nominations_highscore
 
-def get_width(data):
-    """ Helper function getting table width """
-    width = 2
-    max_length = 5
-    for item in data:
-        if len(str((item[0]))) > max_length:
-            max_length = len(item[0])
-    return width+max_length 
-
-
+    def get_awards_highscore(self, movies):
+        """ Helper function getting awards highscore """
+        awards_highscore = self.awards_highscore
+        for movie in movies:
+            awards = get_awards(movie[3]) if movie[3] is not None else 0
+            if awards > int(awards_highscore[1]):
+                awards_highscore = (movie[0], awards)
+        return awards_highscore
 
 class Movie:
     """ Movie class """
@@ -352,14 +347,15 @@ class Repository():
         return cursor.fetchall()
 
     def get_highscores(self):
+        highscore = Highscore()
         cursor = self.db.get_for_highscores()
         data = cursor.fetchall()
-        runtime = get_highest_runtime(data)
-        box_office = get_highest_box_office(data)
-        awards = get_awards_highscore(data)
-        nominations = get_nominations_highscore(data)
-        oscars = get_oscars_highscore(data)
-        rating = get_highest_imdb_rating(data)
+        runtime = highscore.get_highest_runtime(data)
+        box_office = highscore.get_highest_box_office(data)
+        awards = highscore.get_awards_highscore(data)
+        nominations = highscore.get_nominations_highscore(data)
+        oscars = highscore.get_oscars_highscore(data)
+        rating = highscore.get_highest_imdb_rating(data)
         return [runtime, box_office, awards, nominations, oscars, rating]
 
     def get_sorted_by_runtime(self):
@@ -376,6 +372,15 @@ class Repository():
 
 class PrettyPrinter():
     def __init__(self, data):
+        def get_width(data):
+            """ Helper function getting table width """
+            width = 2
+            max_length = 5
+            for item in data:
+                if len(str((item[0]))) > max_length:
+                    max_length = len(item[0])
+            return width+max_length 
+            
         self.width = get_width(data)
 
     def print(self, columns, data):
@@ -434,9 +439,13 @@ class Main():
             choices = ['director', 'actor', 'language', 'awarded', 'nominated', 'earned']
             if list(args.filter_by) == [] or args.filter_by[0] not in choices:
                 print(f"usage: movies.py [-f] filter - choose from: {choices}")
-
+                pass
+            
             filter = args.filter_by[0]
-            value = args.filter_by[1] if args.filter_by[0] not in ['nominated', 'awarded', 'earned'] else ''
+            if args.filter_by[0] not in ['nominated', 'awarded', 'earned']:
+                pass
+            else:
+                value = args.filter_by[1] 
             
             if filter == 'director':
                 columns = ('Title', filter)
