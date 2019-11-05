@@ -303,7 +303,6 @@ class Repository():
             self.db.update(movie)
             print(f"Succesfully retrieved data from OMDb for {title}\n")
         self.db.conn.commit()
-        return "Succesfully populated database"
 
     def add(self, title):
         cursor = self.db.insert(title)
@@ -319,7 +318,6 @@ class Repository():
         except:
             self.db.conn.rollback()
             print(f"Couldn't find data in OMDb - rolling back {title}\n")
-        return 'iuyt'
 
     def get_awards(self, movies):
         cursor = self.db.get_awards(movies[0],movies[1])
