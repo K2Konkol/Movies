@@ -14,7 +14,7 @@ FAKE_URL = 'http://fake_url'
 
 class MockResponse_OK:
     @staticmethod
-    def json(file='alien.json'):
+    def json(file='fixtures/alien.json'):
         import json
         with open(file, 'r') as read_file:
             data = json.load(read_file)
@@ -40,10 +40,10 @@ class MockDBPopulated:
         self.cursor = self.conn.cursor()
         self.cursor.execute("CREATE TABLE IF NOT EXISTS movies (ID INTEGER PRIMARY KEY, TITLE TEXT, YEAR INTEGER,  RUNTIME TEXT, GENRE TEXT, DIRECTOR TEXT, CAST TEXT, WRITER TEXT, LANGUAGE TEXT, COUNTRY TEXT, AWARDS TEXT, IMDb_Rating FLOAT, IMDb_votes INTEGER, BOX_OFFICE INTEGER)")
         alien = Movie.json_to_movie(MockResponse_OK().json())
-        boyhood = Movie.json_to_movie(MockResponse_OK().json('boyhood.json'))
-        forrest = Movie.json_to_movie(MockResponse_OK().json('forrest.json'))
-        memento = Movie.json_to_movie(MockResponse_OK().json('memento.json'))
-        shawshank = Movie.json_to_movie(MockResponse_OK().json('shawshank.json'))    
+        boyhood = Movie.json_to_movie(MockResponse_OK().json('fixtures/boyhood.json'))
+        forrest = Movie.json_to_movie(MockResponse_OK().json('fixtures/forrest.json'))
+        memento = Movie.json_to_movie(MockResponse_OK().json('fixtures/memento.json'))
+        shawshank = Movie.json_to_movie(MockResponse_OK().json('fixtures/shawshank.json'))    
         DB.insert(self, "Alien")
         DB.update(self, alien)
         DB.insert(self, "Boyhood")
