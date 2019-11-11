@@ -4,14 +4,17 @@ Usage:
 
 Use this option to download data from OMDb and populate your database. Movie titles should be provided in Your local database. Note that you have to provide your own API key and put it in apikey.json file.
 
+
     python3 movies.py -a, -add 'Gran Torino'
 
 Use this option to add movie title in your locak database - it automatically makes a request to fetch data from OMDb, and updates data in local database if the request was succesful, rolls back the insert otherwise.
+
 
     python3 movies.py -s, --sort_by year
 
 Sort movies by given column name, available:
 'title', 'year', 'runtime', 'genre', 'director', 'cast', 'writer', 'language', 'country', 'awards', 'imdb_rating', 'imdb_votes', 'box_office'
+
 
     python3 movies.py -f, --filter_by actor 'Brad Pitt'
 
@@ -25,6 +28,7 @@ earned              - shows movies that earned more than 100,000,000 $
 language 'language' - shows only movies in certain Language
 
 
+
     python3 movies.py -c, --compare runtime 'Alien' 'Boyhood'
 
 Compares two given movies by given column
@@ -33,6 +37,7 @@ imdb_rating         - by IMDb Rating
 box_office          - by box office earnings
 awards              - by number of awards won
 runtime             - by runtime
+
 
 
     python3 movies.py --highscores
