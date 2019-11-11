@@ -1,4 +1,5 @@
 Usage:
+
 Use this option to download data from OMDb and populate your database. Movie titles should be provided in Your local database. Note that you have to provide your own API key and put it in apikey.json file
 
     python3 movies.py -p, --populate
