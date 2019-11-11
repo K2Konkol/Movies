@@ -7,12 +7,13 @@ class PrettyPrinter():
             for item in data:
                 if len(str((item[0]))) > max_length:
                     max_length = len(item[0])
-            return width+max_length 
-            
+            return width+max_length
+
         self.width = get_width(data)
 
     def print(self, columns, data):
         pass
+
 
 class PrintFiltered(PrettyPrinter):
     def print(self, columns, data):
@@ -22,10 +23,18 @@ class PrintFiltered(PrettyPrinter):
         for (title, value) in data:
             print(str(title).ljust(self.width), str(value))
 
+
 class PrintHighscores(PrettyPrinter):
     def print(self, data):
-        rows = ['Runtime', 'Box Office', 'Awards', 'Nominations', 'Oscars', 'IMDb Rating']
+        rows = [
+            'Runtime', 'Box Office', 'Awards',
+            'Nominations', 'Oscars', 'IMDb Rating'
+        ]
         rows_width = 13
         highscores = zip(rows, data)
         for column, (title, value) in highscores:
-                print(str(column).ljust(rows_width), str(title).ljust(self.width), value)
+            print(
+                str(column).ljust(rows_width),
+                str(title).ljust(self.width),
+                value
+            )

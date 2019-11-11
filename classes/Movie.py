@@ -1,8 +1,12 @@
 class Movie:
     """ Movie class """
 
-    def __init__(self, title='N/A', year=0, runtime='N/A', genre='N/A', director='N/A', cast='N/A', writer='N/A', 
-    language='N/A', country='N/A', awards='N/A', imdb_rating=0.0, imdb_votes=0, box_office=0):
+    def __init__(
+        self, title='N/A', year=0, runtime='N/A', genre='N/A',
+        director='N/A', cast='N/A', writer='N/A',
+        language='N/A', country='N/A', awards='N/A',
+        imdb_rating=0.0, imdb_votes=0, box_office=0
+    ):
         self.title = title
         self.year = year
         self.runtime = runtime
@@ -19,12 +23,12 @@ class Movie:
 
     def __str__(self):
         return self.title
-    
+
     @staticmethod
-    def json_to_movie(data):    
+    def json_to_movie(data):
         """ Parse JSON data to Movie object """
         return Movie(
-            title=data['Title'], 
+            title=data['Title'],
             year=data['Year'],
             runtime=data['Runtime'],
             genre=data['Genre'],
