@@ -4,7 +4,7 @@ Use this option to download data from OMDb and populate your database. Movie tit
 
     python3 movies.py -p, --populate
 
-Use this option to add movie title in your locak database - it automatically makes a request to fetch data from OMDb, and updates data in local database if the request was succesful, rolls back the insert otherwise.
+Use this option to add movie title in your local database - it automatically makes a request to fetch data from OMDb, and updates data in local database if the request was succesful, rolls back the insert otherwise.
 
     python3 movies.py -a, -add 'Gran Torino'
 
